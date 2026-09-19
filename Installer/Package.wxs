@@ -1,0 +1,130 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package
+      Name="Windows Spatial Bridge"
+      Manufacturer="mrbeag"
+      Version="0.1.16"
+      UpgradeCode="2A04801F-E21B-413B-99CE-B4472462557A"
+      Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Windows Spatial Bridge is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <util:CloseApplication
+        Id="CloseSpatialBridgeTray"
+        Target="SpatialBridgeTray.exe"
+        Description="Windows Spatial Bridge is running."
+        CloseMessage="yes"
+        EndSessionMessage="yes"
+        Timeout="5"
+        RebootPrompt="no" />
+
+    <InstallExecuteSequence>
+      <Custom Action="Wix4CloseApplications_X64" Before="InstallValidate" />
+    </InstallExecuteSequence>
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <Property Id="WIXUI_DONTVALIDATEPATH" Value="1" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Icon Id="AppIcon.ico" SourceFile="..\Assets\AppIcon.ico" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Open Windows Spatial Bridge" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixUnelevatedShellExecTarget" Value="[#TrayExecutable]" />
+    <CustomAction
+        Id="LaunchTrayApplication"
+        BinaryRef="Wix4UtilCA_X64"
+        DllEntry="WixUnelevatedShellExec"
+        Execute="immediate"
+        Impersonate="yes"
+        Return="ignore" />
+    <UI Id="InstallDirNoLicense">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+
+      <DialogRef Id="BrowseDlg" />
+      <DialogRef Id="DiskCostDlg" />
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+
+      <Publish Dialog="BrowseDlg" Control="OK" Event="SpawnDialog" Value="InvalidDirDlg" Order="4"
+               Condition="NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID&lt;&gt;&quot;1&quot;" />
+      <Publish
+          Dialog="ExitDialog"
+          Control="Finish"
+          Event="DoAction"
+          Value="LaunchTrayApplication"
+          Order="1"
+          Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
+
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" Condition="NOT Installed" />
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="Installed AND PATCH" />
+      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1" />
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3"
+               Condition="NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID&lt;&gt;&quot;1&quot;" />
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="4"
+               Condition="WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID=&quot;1&quot;" />
+      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1" />
+      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" Order="1" Condition="NOT Installed" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed AND NOT PATCH" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2" Condition="Installed AND PATCH" />
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg" />
+      <Property Id="ARPNOMODIFY" Value="1" />
+    </UI>
+    <UIRef Id="WixUI_Common" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Windows Spatial Bridge">
+        <Component Id="ApplicationFiles" Guid="*" Bitness="always64">
+          <File Id="TrayExecutable" Source="payload\SpatialBridgeTray.exe" KeyPath="yes">
+            <Shortcut
+                Id="StartMenuShortcut"
+                Directory="ProgramMenuFolder"
+                Name="Windows Spatial Bridge"
+                Description="Route 7.1 game audio into Windows Spatial Sound"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.ico"
+                IconIndex="0"
+                Advertise="yes" />
+          </File>
+          <RegistryValue
+              Root="HKLM"
+              Key="Software\Windows Spatial Bridge"
+              Name="InstallFolder"
+              Type="string"
+              Value="[INSTALLFOLDER]" />
+        </Component>
+        <Component Id="BridgeFiles" Guid="*" Bitness="always64">
+          <File Id="BridgeExecutable" Source="payload\SpatialBridge.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="DocumentationFiles" Guid="*" Bitness="always64">
+          <File Id="ReadmeFile" Source="payload\README.md" KeyPath="yes" />
+        </Component>
+        <Component Id="LicenseFiles" Guid="*" Bitness="always64">
+          <File Id="LicenseFile" Source="payload\LICENSE" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="MainFeature" Title="Windows Spatial Bridge" Level="1">
+      <ComponentRef Id="ApplicationFiles" />
+      <ComponentRef Id="BridgeFiles" />
+      <ComponentRef Id="DocumentationFiles" />
+      <ComponentRef Id="LicenseFiles" />
+    </Feature>
+  </Package>
+</Wix>

@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.1.16</Version>
+    <Authors>mrbeag</Authors>
+    <Product>Windows Spatial Bridge</Product>
+    <Description>Routes conventional 7.1 game audio into Windows Spatial Audio.</Description>
+    <RepositoryUrl>https://github.com/mrbeag/windows-spatial-bridge</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/mrbeag/windows-spatial-bridge</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <Copyright>Copyright 2026 mrbeag</Copyright>
+  </PropertyGroup>
+</Project>

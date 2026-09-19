@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1220 230" role="img" aria-labelledby="title desc">
+  <title id="title">Native Windows Spatial Audio flow</title>
+  <desc id="desc">A game sends spatial objects to the Windows Spatial Audio API. Windows Sonic, Dolby Atmos, or DTS then render spatial stereo for headphones. The handoff from the game to the API is highlighted as the failure point in affected games. Voice chat travels directly to the headphones as stereo.</desc>
+  <style>
+    .node { fill: #1f2937; stroke: #6b7280; stroke-width: 2; }
+    .device { fill: #172554; stroke: #60a5fa; }
+    .node-text { fill: #f9fafb; font: 500 17px "Segoe UI", Arial, sans-serif; text-anchor: middle; }
+    .device-label { fill: #93c5fd; font: 400 12px "Segoe UI", Arial, sans-serif; text-anchor: middle; }
+    .label { fill: #d1d5db; font: 500 15px "Segoe UI", Arial, sans-serif; text-anchor: middle; }
+    .arrow { fill: none; stroke: #9ca3af; stroke-width: 2; marker-end: url(#arrow); }
+    .spatial-arrow { fill: none; stroke: #10b981; stroke-width: 4; marker-end: url(#spatial-arrow); }
+    .spatial-label { fill: #6ee7b7; font: 500 15px "Segoe UI", Arial, sans-serif; text-anchor: middle; }
+    .failure-box { fill: #3f1d1d; stroke: #ef4444; stroke-width: 2; }
+    .failure-title { fill: #fca5a5; font: 500 16px "Segoe UI", Arial, sans-serif; text-anchor: middle; }
+    .failure-text { fill: #fecaca; font: 400 14px "Segoe UI", Arial, sans-serif; text-anchor: middle; }
+    .failure-link { fill: none; stroke: #ef4444; stroke-width: 2; stroke-dasharray: 5 5; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9ca3af" />
+    </marker>
+    <marker id="spatial-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+    </marker>
+  </defs>
+
+  <rect width="1220" height="230" fill="#0d1117" />
+
+  <rect class="node" x="20" y="52" width="150" height="58" rx="6" />
+  <text class="node-text" x="95" y="87">Game audio</text>
+
+  <rect class="node" x="380" y="52" width="235" height="58" rx="6" />
+  <text class="node-text" x="497.5" y="77">Windows Spatial</text>
+  <text class="node-text" x="497.5" y="98">Audio API</text>
+
+  <rect class="node" x="715" y="52" width="245" height="58" rx="6" />
+  <text class="node-text" x="837.5" y="77">Windows Sonic</text>
+  <text class="node-text" x="837.5" y="98">Dolby Atmos / DTS</text>
+
+  <rect class="node device" x="1060" y="40" width="140" height="82" rx="6" />
+  <text class="node-text" x="1130" y="66">Stereo</text>
+  <text class="node-text" x="1130" y="87">headphones</text>
+  <text class="device-label" x="1130" y="108">(audio source)</text>
+
+  <rect class="node" x="715" y="160" width="150" height="50" rx="6" />
+  <text class="node-text" x="790" y="191">Voice chat</text>
+
+  <path class="spatial-arrow" d="M170 81 H380" />
+  <text class="spatial-label" x="275" y="67">Spatial objects</text>
+  <path class="arrow" d="M615 81 H715" />
+  <path class="arrow" d="M960 81 H1060" />
+  <text class="label" x="1010" y="67">Spatial 2.0</text>
+  <path class="arrow" d="M865 185 C950 185 970 120 1060 100" />
+  <text class="label" x="965" y="164">2.0</text>
+
+  <rect class="failure-box" x="190" y="150" width="330" height="62" rx="6" />
+  <text class="failure-title" x="355" y="176">BREAKS HERE for affected games</text>
+  <text class="failure-text" x="355" y="198">The game sends stereo instead of using this API</text>
+  <path class="failure-link" d="M355 150 L275 81" />
+</svg>

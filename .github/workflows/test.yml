@@ -1,0 +1,54 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Install WiX
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 4.0.6
+          wix extension add --global WixToolset.UI.wixext/4.0.6
+          wix extension add --global WixToolset.Util.wixext/4.0.6
+      - name: Test and build the exact release package
+        shell: pwsh
+        run: ./scripts/Build-Release.ps1
+      - name: Keep verified installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: WindowsSpatialBridge-${{ github.sha }}
+          path: |
+            artifacts/release/*.msi
+            artifacts/release/SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Publish tagged installer
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --title "Windows Spatial Bridge $($tag.TrimStart('v'))" --generate-notes
+          }
+          gh release upload $tag artifacts/release/*.msi artifacts/release/SHA256SUMS.txt --clobber
+          $release = gh api "repos/${{ github.repository }}/releases/tags/$tag" | ConvertFrom-Json
+          $checksum = ((Get-Content artifacts/release/SHA256SUMS.txt -Raw) -split '\s+')[0].ToUpperInvariant()
+          $body = $release.body -replace '[0-9A-Fa-f]{64}(?=`)', $checksum
+          gh api -X PATCH "repos/${{ github.repository }}/releases/$($release.id)" -f "body=$body" --silent
