@@ -2,7 +2,7 @@ internal sealed record AudioLatencyProfile(int Milliseconds, string Label, strin
 
 internal static class AudioLatency
 {
-    public const int DefaultMilliseconds = 10;
+    public const int DefaultMilliseconds = 20;
 
     public static IReadOnlyList<AudioLatencyProfile> Profiles { get; } =
     [

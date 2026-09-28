@@ -74,10 +74,10 @@ headphones or DAC you actually listen through.
 
 ![Choose the physical headphones from the bridge tray menu](docs/images/choose-headphones.png)
 
-The tray menu also has a **Latency** submenu. Leave it on **Low — 10 ms** unless
-you hear crackling. **Balanced — 20 ms** and **Safe — 30 ms** add a larger
-safety queue for audio devices or PCs with less consistent timing. Changing the
-setting restarts the bridge automatically.
+The tray menu also has a **Latency** submenu. **Balanced — 20 ms** is the default
+and is recommended for most PCs. If it is completely stable, you can try **Low
+— 10 ms** for less delay; if you hear crackling, choose **Safe — 30 ms** for a
+larger safety queue. Changing the setting restarts the bridge automatically.
 
 ### 4. Turn on Spatial Sound for your headphones
 

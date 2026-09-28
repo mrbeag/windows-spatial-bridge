@@ -47,15 +47,14 @@ The VB-CABLE Line Out endpoint is configured as 8-channel, 24-bit PCM at
 8-channel, 32-bit float shared mix to the bridge. Changing the endpoint format
 requires a one-time elevated setup action.
 
-The default **Low** profile keeps one complete 480-frame audio packet as a
-safety queue. At 48 kHz this adds approximately **10 ms of latency**. A smaller
-queue caused lost frames because Windows supplies and requests audio in complete
-480-frame blocks on the tested path. The tray menu also offers **Balanced (20
-ms)** and **Safe (30 ms)** profiles for systems that crackle at 10 ms. The
-selected target is rounded up to a whole shared scheduling block, saved in the
-user configuration, and applied by restarting the bridge automatically. The
-game, spatial renderer, audio driver, and headphones may add their own latency
-outside the bridge.
+The default **Balanced** profile keeps a 960-frame safety queue, adding
+approximately **20 ms of latency** at 48 kHz. The **Low (10 ms)** profile keeps
+one complete 480-frame packet—the smallest stable reserve on the tested path.
+**Safe (30 ms)** provides additional protection for systems that still crackle.
+The selected target is rounded up to a whole shared scheduling block, saved in
+the user configuration, and applied by restarting the bridge automatically.
+The game, spatial renderer, audio driver, and headphones may add their own
+latency outside the bridge.
 
 ## Device detection
 

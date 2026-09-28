@@ -3,7 +3,7 @@
   <Package
       Name="Windows Spatial Bridge"
       Manufacturer="mrbeag"
-      Version="0.1.17"
+      Version="0.1.18"
       UpgradeCode="2A04801F-E21B-413B-99CE-B4472462557A"
       Scope="perMachine">
 
