@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.17 — 2026-09-28
+
+- Adds a **Latency** submenu to the tray icon with Low (10 ms), Balanced (20
+  ms), and Safe (30 ms) profiles.
+- Saves the selected profile and restarts the bridge automatically when it is
+  changed.
+- Prefills the full selected safety queue before spatial rendering starts, so
+  higher-latency profiles provide protection from the first audio block.
+- Keeps existing installations on the 10 ms default unless the user chooses a
+  different profile.
+- Adds regression tests for profile selection, queue sizing, scheduling-block
+  alignment, and configuration migration.
+
 ## 0.1.16 — 2026-09-19
 
 Initial public release.

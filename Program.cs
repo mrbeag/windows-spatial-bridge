@@ -216,24 +216,25 @@ static class Program
         return new Guid(guid) == new Guid("00000003-0000-0010-8000-00AA00389B71");
     }
 
-    static int GreatestCommonDivisor(int left, int right)
-    {
-        while (right != 0) (left, right) = (right, left % right);
-        return Math.Abs(left);
-    }
-
     [STAThread]
     static int Main(string[] args)
     {
-        if (args.Length != 2)
+        if (args.Length is < 2 or > 3)
         {
-            Console.Error.WriteLine("Usage: SpatialBridge.exe <game-render-endpoint-id> <headphone-render-endpoint-id>");
+            Console.Error.WriteLine("Usage: SpatialBridge.exe <game-render-endpoint-id> <headphone-render-endpoint-id> [latency-ms]");
             Console.Error.WriteLine("Start the bridge through SpatialBridgeTray.exe so the configured endpoints are supplied automatically.");
             return 2;
         }
 
         string gameRenderId = args[0];
         string renderId = args[1];
+        int latencyMilliseconds = AudioLatency.DefaultMilliseconds;
+        if (args.Length == 3 && (!int.TryParse(args[2], out latencyMilliseconds)
+            || !AudioLatency.IsSupported(latencyMilliseconds)))
+        {
+            Console.Error.WriteLine("Latency must be one of: 10, 20, or 30 ms.");
+            return 2;
+        }
         object? enumObject = null, captureAudioObject = null, captureClientObject = null;
         object? spatialClientObject = null, spatialStreamObject = null;
         IntPtr captureFormat = IntPtr.Zero, objectFormat = IntPtr.Zero, activationData = IntPtr.Zero;
@@ -311,7 +312,9 @@ static class Program
             int spatialFrames = checked((int)maxSpatialFrames);
             int captureCapacityFrames = checked((int)captureBufferFrames);
             int provisionalPrefillFrames = Math.Max(captureCapacityFrames, spatialFrames * 2);
-            int ringCapacityFrames = checked(provisionalPrefillFrames + captureCapacityFrames * 2);
+            int requestedQueueFrames = AudioLatency.FramesForMilliseconds(latencyMilliseconds, SampleRate);
+            int ringCapacityFrames = checked(provisionalPrefillFrames + captureCapacityFrames * 2
+                + requestedQueueFrames + spatialFrames);
             var ring = new FloatRing(ringCapacityFrames * Channels);
             float[] captureBuffer = [];
             float[] interleaved = [];
@@ -333,7 +336,7 @@ static class Program
                         "Read game-endpoint loopback packet");
                     observedCapturePacketFrames = observedCapturePacketFrames == 0
                         ? checked((int)frames)
-                        : GreatestCommonDivisor(observedCapturePacketFrames, checked((int)frames));
+                        : AudioLatency.GreatestCommonDivisor(observedCapturePacketFrames, checked((int)frames));
                     int samples = checked((int)frames * Channels);
                     if (captureBuffer.Length < samples) captureBuffer = new float[samples];
                     if ((flags & Native.AUDCLNT_BUFFERFLAGS_SILENT) != 0) Array.Clear(captureBuffer, 0, samples);
@@ -367,13 +370,21 @@ static class Program
                 throw new InvalidOperationException("The 7.1 game endpoint did not supply loopback frames in time.");
 
             int captureFrames = observedCapturePacketFrames;
-            int schedulingGranularity = GreatestCommonDivisor(captureFrames, spatialFrames);
-
-            // Keep one complete shared-engine packet. Loopback delivers 480-frame packets
-            // on this endpoint and Spatial Audio requests 480 frames at once; retaining less
-            // than a packet creates unavoidable partial-block underruns.
-            int targetQueuedFrames = Math.Max(schedulingGranularity, captureFrames - schedulingGranularity);
+            int targetQueuedFrames = AudioLatency.QueueFrames(
+                latencyMilliseconds, SampleRate, captureFrames, spatialFrames);
             int prefillFrames = checked(targetQueuedFrames + spatialFrames);
+
+            // Higher safety profiles need more prefill than the initial packet-size probe.
+            // Fill that reserve before starting Spatial Audio so the selected protection is
+            // present from the first render callback.
+            long selectedPrefillDeadline = Environment.TickCount64 + 2000;
+            while (ring.Count / Channels < prefillFrames && Environment.TickCount64 < selectedPrefillDeadline)
+            {
+                if (Native.WaitForSingleObject(captureEvent, 100) == Native.WAIT_OBJECT_0) DrainCapture();
+            }
+            if (ring.Count / Channels < prefillFrames)
+                throw new InvalidOperationException($"The 7.1 game endpoint could not prefill the selected {latencyMilliseconds} ms safety queue.");
+
             int startupExcessSamples = Math.Max(0, ring.Count - prefillFrames * Channels);
             discardedFrames += ring.DiscardOldest(startupExcessSamples) / Channels;
             Native.Check(spatialStream.Start(), "Start Windows Spatial stream");
