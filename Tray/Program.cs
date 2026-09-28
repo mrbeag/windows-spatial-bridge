@@ -270,6 +270,7 @@ sealed class BridgeConfiguration
     public string GameRenderName { get; set; } = "";
     public string OutputId { get; set; } = "";
     public string OutputName { get; set; } = "";
+    public int LatencyMilliseconds { get; set; } = AudioLatency.DefaultMilliseconds;
 }
 
 static class ConfigurationStore
@@ -297,6 +298,16 @@ static class ConfigurationStore
         root.Remove("CableCaptureName");
         root[nameof(BridgeConfiguration.OutputId)] = output.Id;
         root[nameof(BridgeConfiguration.OutputName)] = output.Name;
+        File.WriteAllText(FilePath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    public static void UpdateLatency(int milliseconds)
+    {
+        Directory.CreateDirectory(DirectoryPath);
+        JsonObject root;
+        try { root = JsonNode.Parse(File.Exists(FilePath) ? File.ReadAllText(FilePath) : "{}")?.AsObject() ?? []; }
+        catch { root = []; }
+        root[nameof(BridgeConfiguration.LatencyMilliseconds)] = AudioLatency.Normalize(milliseconds);
         File.WriteAllText(FilePath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
     }
 }
@@ -811,6 +822,7 @@ sealed class TrayContext : ApplicationContext
     readonly ToolStripMenuItem statusItem = new("Stopped") { Enabled = false };
     readonly ToolStripMenuItem spatialItem = new("Spatial endpoint: unknown") { Enabled = false };
     readonly ToolStripMenuItem outputMenu = new("Headphones");
+    readonly ToolStripMenuItem latencyMenu = new("Latency");
     readonly Icon offIcon = IconFactory.Create(Color.FromArgb(72, 72, 72));
     readonly Icon stoppedIcon = IconFactory.Create(Color.FromArgb(239, 68, 68));
     readonly Icon readyIcon = IconFactory.Create(Color.FromArgb(245, 158, 11));
@@ -821,6 +833,7 @@ sealed class TrayContext : ApplicationContext
     List<AudioEndpoint> outputs = [];
     string? selectedGameInputId;
     string? selectedOutputId;
+    int selectedLatencyMilliseconds = AudioLatency.DefaultMilliseconds;
     Process? bridgeProcess;
     string status = "Stopped";
     bool bridgeDesired;
@@ -837,6 +850,7 @@ sealed class TrayContext : ApplicationContext
         menu.Items.Add(spatialItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(outputMenu);
+        menu.Items.Add(latencyMenu);
         menu.Items.Add(new ToolStripSeparator());
         var settingsItem = menu.Items.Add("Open status");
         var exitItem = menu.Items.Add("Exit");
@@ -863,6 +877,8 @@ sealed class TrayContext : ApplicationContext
         if (string.IsNullOrWhiteSpace(selectedGameInputId))
             selectedGameInputId = AudioConfigurator.FindGameEndpoint(gameInputs)?.Id;
         selectedOutputId = saved?.OutputId;
+        selectedLatencyMilliseconds = AudioLatency.Normalize(
+            saved?.LatencyMilliseconds ?? AudioLatency.DefaultMilliseconds);
         RefreshSetupStatus();
         RefreshSpatialStatus();
         RebuildMenu();
@@ -910,6 +926,19 @@ sealed class TrayContext : ApplicationContext
             item.Click += async (_, _) => await ApplyListeningDeviceAsync((AudioEndpoint)item.Tag!);
             outputMenu.DropDownItems.Add(item);
         }
+        latencyMenu.DropDownItems.Clear();
+        foreach (var profile in AudioLatency.Profiles)
+        {
+            var item = new ToolStripMenuItem(profile.Label)
+            {
+                Checked = profile.Milliseconds == selectedLatencyMilliseconds,
+                CheckOnClick = false,
+                ToolTipText = profile.Description,
+                Tag = profile.Milliseconds
+            };
+            item.Click += (_, _) => SelectLatency((int)item.Tag!);
+            latencyMenu.DropDownItems.Add(item);
+        }
         bool running = bridgeProcess is { HasExited: false };
         BridgePresentation presentation = BridgePresentationResolver.Resolve(
             status, setupStatus, spatialCapability.Summary, running);
@@ -942,6 +971,22 @@ sealed class TrayContext : ApplicationContext
             StopBridgeProcess();
             StartBridge();
         }
+    }
+
+    void SelectLatency(int milliseconds)
+    {
+        milliseconds = AudioLatency.Normalize(milliseconds);
+        if (milliseconds == selectedLatencyMilliseconds) return;
+
+        selectedLatencyMilliseconds = milliseconds;
+        ConfigurationStore.UpdateLatency(milliseconds);
+        bool restart = bridgeDesired || bridgeProcess is { HasExited: false };
+        if (restart)
+        {
+            StopBridgeProcess(updateStatus: false);
+            StartBridge();
+        }
+        else RebuildMenu();
     }
 
     public void StartBridge()
@@ -1009,6 +1054,7 @@ sealed class TrayContext : ApplicationContext
         // bypasses VB-CABLE's buffered Input -> Output transfer path.
         info.ArgumentList.Add(gameInput.Id);
         info.ArgumentList.Add(output.Id);
+        info.ArgumentList.Add(selectedLatencyMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture));
         bridgeProcess = new Process { StartInfo = info, EnableRaisingEvents = true };
         bridgeProcess.OutputDataReceived += (_, e) =>
         {
