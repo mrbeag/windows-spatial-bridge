@@ -30,19 +30,19 @@ public sealed class AudioLatencyTests
     [InlineData(0)]
     [InlineData(5)]
     [InlineData(40)]
-    public void UnsupportedValuesFallBackToLowLatency(int milliseconds)
+    public void UnsupportedValuesFallBackToBalancedLatency(int milliseconds)
     {
         Assert.Equal(AudioLatency.DefaultMilliseconds, AudioLatency.Normalize(milliseconds));
     }
 
     [Fact]
-    public void ExistingConfigurationWithoutLatencyKeepsTenMillisecondDefault()
+    public void ExistingConfigurationWithoutLatencyUsesBalancedDefault()
     {
         const string json = """{"GameRenderId":"game","OutputId":"headphones"}""";
 
         BridgeConfiguration configuration = JsonSerializer.Deserialize<BridgeConfiguration>(json)!;
 
-        Assert.Equal(10, configuration.LatencyMilliseconds);
+        Assert.Equal(20, configuration.LatencyMilliseconds);
     }
 
     [Fact]

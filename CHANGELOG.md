@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.18 — 2026-09-28
+
+- Makes **Balanced — 20 ms** the default latency profile for more reliable
+  playback across different PCs and audio devices.
+- Keeps **Low — 10 ms** available for stable systems where minimum delay is
+  preferred, and **Safe — 30 ms** for systems that still crackle.
+- Updates the setup guidance to explain which latency profile to choose.
+
 ## 0.1.17 — 2026-09-28
 
 - Adds a **Latency** submenu to the tray icon with Low (10 ms), Balanced (20
